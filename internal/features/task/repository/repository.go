@@ -93,6 +93,9 @@ func (r *Repo) SetCompletedTask(ctx context.Context, title string, completed boo
 }
 
 func (r *Repo) DeleteTask(ctx context.Context, title string) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
 	if _, ok := r.Tasks[title]; !ok {
 		return apperror.ErrTaskNotFound
 	}
