@@ -91,3 +91,13 @@ func (r *Repo) SetCompletedTask(ctx context.Context, title string, completed boo
 
 	return nil
 }
+
+func (r *Repo) DeleteTask(ctx context.Context, title string) error {
+	if _, ok := r.Tasks[title]; !ok {
+		return apperror.ErrTaskNotFound
+	}
+
+	delete(r.Tasks, title)
+
+	return nil
+}

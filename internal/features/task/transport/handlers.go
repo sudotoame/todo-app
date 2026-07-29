@@ -13,6 +13,7 @@ type Service interface {
 	CreateTask(ctx context.Context, title, description string) error
 	FoundTask(ctx context.Context, title string, complete *bool) ([]task.Task, error)
 	SetTask(ctx context.Context, title string, completed bool) error
+	DeleteTask(ctx context.Context, title string) error
 }
 
 type Handlers struct {
@@ -117,4 +118,15 @@ func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+}
+
+func (h *Handlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	if err := h.Service.DeleteTask(r.Context(), id); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

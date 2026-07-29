@@ -9,6 +9,7 @@ type Repository interface {
 	AddTask(ctx context.Context, task task.Task) error
 	GetTask(ctx context.Context, title string, completed *bool) ([]task.Task, error)
 	SetCompletedTask(ctx context.Context, title string, completed bool) error
+	DeleteTask(ctx context.Context, title string) error
 }
 
 type Service struct {
@@ -43,9 +44,13 @@ func (s *Service) FoundTask(ctx context.Context, title string, complete *bool) (
 }
 
 func (s *Service) SetTask(ctx context.Context, title string, completed bool) error {
-	if err := s.repo.SetCompletedTask(ctx, title, completed); err != nil {
-		return err
-	}
+	err := s.repo.SetCompletedTask(ctx, title, completed)
 
-	return nil
+	return err
+}
+
+func (s *Service) DeleteTask(ctx context.Context, title string) error {
+	err := s.repo.DeleteTask(ctx, title)
+
+	return err
 }
