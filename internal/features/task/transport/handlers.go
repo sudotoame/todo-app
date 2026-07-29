@@ -12,6 +12,7 @@ import (
 type Service interface {
 	CreateTask(ctx context.Context, title, description string) error
 	FoundTask(ctx context.Context, title string, complete *bool) ([]task.Task, error)
+	SetTask(ctx context.Context, title string, completed bool) error
 }
 
 type Handlers struct {
@@ -85,6 +86,34 @@ func (h *Handlers) HandleGetTask(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(tasks); err != nil {
 		fmt.Println("error to encoding response")
+
+		return
+	}
+}
+
+func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
+	var req CreateTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	id := r.PathValue("id")
+
+	if err := h.Service.SetTask(r.Context(), id, req.Completed); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	task, _ := h.Service.FoundTask(r.Context(), id, nil)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(task); err != nil {
+		fmt.Println("Ошибка энкодинга при response")
 
 		return
 	}

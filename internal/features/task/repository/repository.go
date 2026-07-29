@@ -9,7 +9,7 @@ import (
 
 type Repo struct {
 	Tasks map[string]task.Task
-	mtx   sync.Mutex
+	mtx   sync.RWMutex
 	// pool *pgx.Pool
 }
 
@@ -22,6 +22,7 @@ func NewRepo() *Repo {
 func (r *Repo) AddTask(ctx context.Context, task task.Task) error {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
+
 	if _, ok := r.Tasks[task.Title]; ok {
 		return apperror.ErrTaskAlreadyExists
 	}
@@ -32,6 +33,9 @@ func (r *Repo) AddTask(ctx context.Context, task task.Task) error {
 }
 
 func (r *Repo) GetTask(ctx context.Context, title string, completed *bool) ([]task.Task, error) {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
 	if completed != nil {
 		var tasks []task.Task
 		for _, value := range r.Tasks {
@@ -66,4 +70,24 @@ func (r *Repo) GetTask(ctx context.Context, title string, completed *bool) ([]ta
 	value = append(value, v)
 
 	return value, nil
+}
+
+func (r *Repo) SetCompletedTask(ctx context.Context, title string, completed bool) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	task, ok := r.Tasks[title]
+	if !ok {
+		return apperror.ErrTaskNotFound
+	}
+
+	if completed {
+		task.Complete()
+	} else {
+		task.Uncomplete()
+	}
+
+	r.Tasks[title] = task
+
+	return nil
 }
