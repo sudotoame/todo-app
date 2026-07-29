@@ -13,6 +13,7 @@ type Server struct {
 func NewServer(handler Handlers) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /tasks", handler.HandleNewTask)
+	mux.HandleFunc("GET /tasks", handler.HandleGetTask)
 
 	return &Server{
 		Server: &http.Server{

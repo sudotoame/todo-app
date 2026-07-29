@@ -29,3 +29,15 @@ func NewTask(title string, description string) (Task, error) {
 		CompletedAt: nil,
 	}, nil
 }
+
+func (t *Task) Complete() {
+	completeTime := time.Now()
+
+	t.Completed = true
+	t.CompletedAt = &completeTime
+}
+
+func (t *Task) Uncomplete() {
+	t.Completed = false
+	t.CompletedAt = nil
+}

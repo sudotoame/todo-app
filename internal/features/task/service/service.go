@@ -7,7 +7,7 @@ import (
 
 type Repository interface {
 	AddTask(ctx context.Context, task task.Task) error
-	GetTask(ctx context.Context, title string) (task.Task, error)
+	GetTask(ctx context.Context, title string, completed *bool) ([]task.Task, error)
 }
 
 type Service struct {
@@ -33,10 +33,10 @@ func (s *Service) CreateTask(ctx context.Context, title, description string) err
 	return nil
 }
 
-func (s *Service) FoundTask(ctx context.Context, title string) (task.Task, error) {
-	t, err := s.repo.GetTask(ctx, title)
+func (s *Service) FoundTask(ctx context.Context, title string, complete *bool) ([]task.Task, error) {
+	t, err := s.repo.GetTask(ctx, title, complete)
 	if err != nil {
-		return task.Task{}, err
+		return []task.Task{}, err
 	}
 	return t, nil
 }
