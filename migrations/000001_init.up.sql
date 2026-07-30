@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS tasks (
+	title VARCHAR(200) NOT NULL,
+	description VARCHAR(2000) NOT NULL,
+	completed BOOLEAN NOT NULL,
+	created_at TIMESTAMP NOT NULL,
+	completed_at TIMESTAMP
+);
