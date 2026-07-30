@@ -1,0 +1,106 @@
+package repository
+
+import (
+	"context"
+	"sync"
+	apperror "todo-app/internal/core/app-error"
+	"todo-app/internal/core/domains/task"
+)
+
+type Repo struct {
+	Tasks map[string]task.Task
+	mtx   sync.RWMutex
+	// pool *pgx.Pool
+}
+
+func NewRepo() *Repo {
+	return &Repo{
+		Tasks: make(map[string]task.Task),
+	}
+}
+
+func (r *Repo) AddTask(ctx context.Context, task task.Task) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if _, ok := r.Tasks[task.Title]; ok {
+		return apperror.ErrTaskAlreadyExists
+	}
+
+	r.Tasks[task.Title] = task
+
+	return nil
+}
+
+func (r *Repo) GetTask(ctx context.Context, title string, completed *bool) ([]task.Task, error) {
+	r.mtx.RLock()
+	defer r.mtx.RUnlock()
+
+	if completed != nil {
+		var tasks []task.Task
+		for _, value := range r.Tasks {
+			if value.Completed == *completed {
+				tasks = append(tasks, value)
+			}
+		}
+
+		if len(tasks) == 0 {
+			if *completed {
+				return nil, apperror.ErrNotFoundCompletedTask
+			}
+			return nil, apperror.ErrNotFoundUncompletedTask
+		}
+
+		return tasks, nil
+	}
+
+	var value []task.Task
+	if title == "" {
+		for _, v := range r.Tasks {
+			value = append(value, v)
+		}
+
+		return value, nil
+	}
+
+	v, ok := r.Tasks[title]
+	if !ok {
+		return []task.Task{}, apperror.ErrTaskNotFound
+	}
+	value = append(value, v)
+
+	return value, nil
+}
+
+func (r *Repo) SetCompletedTask(ctx context.Context, title string, completed bool) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	task, ok := r.Tasks[title]
+	if !ok {
+		return apperror.ErrTaskNotFound
+	}
+
+	if completed {
+		task.Complete()
+	} else {
+		task.Uncomplete()
+	}
+
+	r.Tasks[title] = task
+
+	return nil
+}
+
+func (r *Repo) DeleteTask(ctx context.Context, title string) error {
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	if _, ok := r.Tasks[title]; !ok {
+		return apperror.ErrTaskNotFound
+	}
+
+	delete(r.Tasks, title)
+
+	return nil
+}
