@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 	"todo-app/internal/core/domains/task"
 )
 
@@ -13,8 +14,9 @@ type Service interface {
 	CreateTask(ctx context.Context, title, description string) (*task.Task, error)
 	GetTaskByID(ctx context.Context, id int) (*task.Task, error)
 	ListTasks(ctx context.Context, completed *bool) ([]task.Task, error)
-	SetTask(ctx context.Context, title string, completed bool) error
-	DeleteTask(ctx context.Context, title string) error
+	SetCompleteTask(ctx context.Context, id int, t task.Task) error
+	UpdateTask(ctx context.Context, id int, t task.Task) error
+	DeleteTask(ctx context.Context, id int) error
 }
 
 type Handlers struct {
@@ -102,7 +104,7 @@ func (h *Handlers) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleSetCompleteTask(w http.ResponseWriter, r *http.Request) {
 	var req CreateTaskRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -118,7 +120,13 @@ func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Service.SetTask(r.Context(), id, req.Completed); err != nil {
+	now := time.Now()
+	t := task.Task{
+		Completed:   req.Completed,
+		CompletedAt: &now,
+	}
+
+	if err := h.Service.SetCompleteTask(r.Context(), pathId, t); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 
 		return
@@ -136,8 +144,52 @@ func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handlers) HandleUpdateTask(w http.ResponseWriter, r *http.Request) {
+	var req CreateTaskRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	val := r.PathValue("id")
+	id, err := strconv.Atoi(val)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
+
+	t := task.Task{
+		Title:       req.Title,
+		Description: req.Description,
+	}
+
+	if err := h.Service.UpdateTask(r.Context(), id, t); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+
+		return
+	}
+
+	tr, _ := h.Service.GetTaskByID(r.Context(), id)
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(tr); err != nil {
+		fmt.Println(err)
+
+		return
+	}
+}
+
 func (h *Handlers) HandleDeleteTask(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
+	val := r.PathValue("id")
+	id, err := strconv.Atoi(val)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
 	if err := h.Service.DeleteTask(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 

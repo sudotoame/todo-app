@@ -6,13 +6,13 @@ import (
 )
 
 type Repository interface {
-	// AddTask(ctx context.Context, task task.Task) error
 	AddTask(ctx context.Context, t task.Task) (*task.Task, error)
 	GetTaskByID(ctx context.Context, id int) (*task.Task, error)
 	ListTasks(ctx context.Context) ([]task.Task, error)
 	ListTasksByComplete(ctx context.Context, completed *bool) ([]task.Task, error)
-	SetCompletedTask(ctx context.Context, title string, completed bool) error
-	DeleteTask(ctx context.Context, title string) error
+	SetCompleteTask(ctx context.Context, id int, t task.Task) error
+	UpdateTask(ctx context.Context, id int, t task.Task) error
+	DeleteTask(ctx context.Context, id int) error
 }
 
 type Service struct {
@@ -64,14 +64,16 @@ func (s *Service) ListTasks(ctx context.Context, completed *bool) ([]task.Task, 
 	return task, nil
 }
 
-func (s *Service) SetTask(ctx context.Context, title string, completed bool) error {
-	err := s.repo.SetCompletedTask(ctx, title, completed)
-
-	return err
+func (s *Service) SetCompleteTask(ctx context.Context, id int, t task.Task) error {
+	return s.repo.SetCompleteTask(ctx, id, t)
 }
 
-func (s *Service) DeleteTask(ctx context.Context, title string) error {
-	err := s.repo.DeleteTask(ctx, title)
+func (s *Service) UpdateTask(ctx context.Context, id int, t task.Task) error {
+	return s.repo.UpdateTask(ctx, id, t)
+}
+
+func (s *Service) DeleteTask(ctx context.Context, id int) error {
+	err := s.repo.DeleteTask(ctx, id)
 
 	return err
 }

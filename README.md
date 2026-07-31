@@ -16,24 +16,26 @@
 }
 ```
 
-- `GET /tasks` - Принимает **json** запрос и возвращает найденный **task**
+- `GET /tasks` - Возвращает все **tasks**
   - `?completed=true`
   - `?completed=false`
     - **query** параметры для метода **GET**, возвращают **tasks** у которых поле **completed** соответствует query значении
-  - Поле `"title"` можно сделать пустым `""`, чтобы получить все **tasks**
+- `GET /tasks/{id}` - Возвращает **task** по **ID**
 
-```json
-{
-	"title": "title"
-}
-```
-
-- `PATCH /task/{id}` - Принимает `title` по **path** параметру и в **json** запросе принимает поле `"created": false/true`, меняя значения поле created, чтобы отменить **task** как выполненную и так-же меняет поле `createdAt` с `nil`, на актуальное время выполнения
-
+- `PATCH /tasks/{id}` - Принимает **json** со статусом **task**, по переданному **id** меняет его статус либо на `true/false`
 ```json
 {
 	"created": true
 }	
+```
+
+- `PUT /tasks/{id}` - Меняет указанный **task** по **id** используя поля из тела запроса
+
+```json
+{
+	"title": "title",
+	"description": "description"
+}
 ```
 
 - `DELETE /tasks/{id}` - Принимает `id` **task** по **path** параметру, чтобы удалить таску

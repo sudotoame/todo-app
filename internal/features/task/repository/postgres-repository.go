@@ -127,35 +127,41 @@ func (p *PostgresRepo) ListTasksByComplete(ctx context.Context, completed *bool)
 	return tasks, nil
 }
 
-func (p *PostgresRepo) SetCompletedTask(ctx context.Context, title string, completed bool) error {
-	// r.mtx.Lock()
-	// defer r.mtx.Unlock()
+func (p *PostgresRepo) SetCompleteTask(ctx context.Context, id int, t task.Task) error {
+	if t.Completed == false {
+		t.CompletedAt = nil
+	}
 
-	// task, ok := r.Tasks[title]
-	// if !ok {
-	// 	return apperror.ErrTaskNotFound
-	// }
+	sqlQuery := `
+		UPDATE tasks
+		SET completed=$1, completed_at=$2
+		WHERE id = $3
+	`
 
-	// if completed {
-	// 	task.Complete()
-	// } else {
-	// 	task.Uncomplete()
-	// }
+	_, err := p.Pool.Exec(ctx, sqlQuery, t.Completed, t.CompletedAt, id)
 
-	// r.Tasks[title] = task
-
-	return nil
+	return err
 }
 
-func (p *PostgresRepo) DeleteTask(ctx context.Context, title string) error {
-	// r.mtx.Lock()
-	// defer r.mtx.Unlock()
+func (p *PostgresRepo) UpdateTask(ctx context.Context, id int, t task.Task) error {
+	sqlQuery := `
+		UPDATE tasks
+		SET title=$1, description=$2
+		WHERE id = $3
+	`
 
-	// if _, ok := r.Tasks[title]; !ok {
-	// 	return apperror.ErrTaskNotFound
-	// }
+	_, err := p.Pool.Exec(ctx, sqlQuery, t.Title, t.Description, id)
 
-	// delete(r.Tasks, title)
+	return err
+}
 
-	return nil
+func (p *PostgresRepo) DeleteTask(ctx context.Context, id int) error {
+	sqlQuery := `
+		DELETE FROM tasks
+		WHERE id = $1
+	`
+
+	_, err := p.Pool.Exec(ctx, sqlQuery, id)
+
+	return err
 }
