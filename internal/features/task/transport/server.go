@@ -14,7 +14,8 @@ func NewServer(handler Handlers) *Server {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /tasks", handler.HandleNewTask)
 	mux.HandleFunc("PATCH /tasks/{id}", handler.HandleSetTask)
-	mux.HandleFunc("GET /tasks", handler.HandleGetTask)
+	mux.HandleFunc("GET /tasks", handler.HandleListTasks) // ?completed=true/false
+	mux.HandleFunc("GET /tasks/{id}", handler.HandleGetTaskByID)
 	mux.HandleFunc("DELETE /tasks/{id}", handler.HandleDeleteTask)
 
 	return &Server{

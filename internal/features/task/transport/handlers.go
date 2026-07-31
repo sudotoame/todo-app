@@ -10,8 +10,9 @@ import (
 )
 
 type Service interface {
-	CreateTask(ctx context.Context, title, description string) error
-	FoundTask(ctx context.Context, title string, complete *bool) ([]task.Task, error)
+	CreateTask(ctx context.Context, title, description string) (*task.Task, error)
+	GetTaskByID(ctx context.Context, id int) (*task.Task, error)
+	ListTasks(ctx context.Context, completed *bool) ([]task.Task, error)
 	SetTask(ctx context.Context, title string, completed bool) error
 	DeleteTask(ctx context.Context, title string) error
 }
@@ -34,7 +35,8 @@ func (h *Handlers) HandleNewTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Service.CreateTask(r.Context(), req.Title, req.Description); err != nil {
+	t, err := h.Service.CreateTask(r.Context(), req.Title, req.Description)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		// TODO: добавить логгер
 		return
@@ -43,13 +45,6 @@ func (h *Handlers) HandleNewTask(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
-	t, err := h.Service.FoundTask(r.Context(), req.Title, nil)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		// TODO: добавить логгер
-		return
-	}
-
 	if err := json.NewEncoder(w).Encode(t); err != nil {
 		fmt.Println("Encoding error!")
 
@@ -57,25 +52,16 @@ func (h *Handlers) HandleNewTask(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handlers) HandleGetTask(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) HandleListTasks(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	completed := query.Get("completed")
-	var req CreateTaskRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-
-		return
-	}
-
 	var completedPtr *bool // nil
 	boolVal, err := strconv.ParseBool(completed)
 	if err == nil { // if err != nil {completedPtr == nil}
 		completedPtr = &boolVal // else {true or false}
 	}
 
-	tasks, err := h.Service.FoundTask(r.Context(), req.Title, completedPtr)
-
+	tasks, err := h.Service.ListTasks(r.Context(), completedPtr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 
@@ -83,7 +69,31 @@ func (h *Handlers) HandleGetTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(tasks); err != nil {
+		fmt.Println("error to encoding response")
+
+		return
+	}
+}
+
+func (h *Handlers) HandleGetTaskByID(w http.ResponseWriter, r *http.Request) {
+	req := r.PathValue("id")
+	id, err := strconv.Atoi(req)
+	if err != nil {
+		http.Error(w, "invalid path value", http.StatusBadRequest)
+		// TODO: logging
+		return
+	}
+
+	tasks, err := h.Service.GetTaskByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(tasks); err != nil {
 		fmt.Println("error to encoding response")
@@ -101,6 +111,12 @@ func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id := r.PathValue("id")
+	pathId, err := strconv.Atoi(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+
+		return
+	}
 
 	if err := h.Service.SetTask(r.Context(), id, req.Completed); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -108,7 +124,7 @@ func (h *Handlers) HandleSetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	task, _ := h.Service.FoundTask(r.Context(), id, nil)
+	task, _ := h.Service.GetTaskByID(r.Context(), pathId)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
