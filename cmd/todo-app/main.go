@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,15 +11,21 @@ import (
 	"todo-app/internal/features/task/repository"
 	"todo-app/internal/features/task/service"
 	"todo-app/internal/features/task/transport"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	fmt.Println("PID:", os.Getpid)
+	pool, err := pgxpool.New(context.Background(), os.Getenv("PGX_CONN_LOCAL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("pgx connected")
 
-	repo := repository.NewRepo()
+	repo := repository.NewPostgresRepo(pool)
 	service := service.NewService(repo)
 	handler := transport.NewHandler(service)
 	server := transport.NewServer(*handler)
