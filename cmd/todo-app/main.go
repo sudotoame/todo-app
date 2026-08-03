@@ -19,7 +19,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	pool, err := pgxpool.New(context.Background(), os.Getenv("PGX_CONN_LOCAL"))
+	pool, err := pgxpool.New(context.Background(), os.Getenv("PGX_CONN_DOCKER"))
 	if err != nil {
 		log.Fatal(err)
 	}

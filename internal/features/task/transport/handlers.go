@@ -65,7 +65,7 @@ func (h *Handlers) HandleListTasks(w http.ResponseWriter, r *http.Request) {
 
 	tasks, err := h.Service.ListTasks(r.Context(), completedPtr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
